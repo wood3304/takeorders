@@ -1,0 +1,9 @@
+{
+  "name": "saveRecipe",
+  "version": "1.0.0",
+  "description": "新增或编辑菜谱并校验 OpenID 所有权",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

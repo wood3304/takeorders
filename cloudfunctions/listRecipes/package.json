@@ -1,0 +1,9 @@
+{
+  "name": "listRecipes",
+  "version": "1.0.0",
+  "description": "分页查询我的菜谱/发现菜谱",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

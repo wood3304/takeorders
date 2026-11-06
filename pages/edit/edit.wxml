@@ -1,0 +1,302 @@
+<view class="editor-page">
+  <view class="editor-head">
+    <text class="editor-eyebrow">{{isEdit ? 'EDIT RECIPE' : 'NEW RECIPE'}}</text>
+    <text class="editor-title">{{isEdit ? '把这道菜，再记得清楚一点' : '记下一道拿手菜'}}</text>
+    <text class="editor-sub">好味道值得被认真记录</text>
+  </view>
+
+  <!-- 编辑数据加载中 -->
+  <view wx:if="{{loading}}" class="editor-state card">
+    <view class="loading-spinner"></view>
+    <text class="state-title">正在打开菜谱…</text>
+  </view>
+
+  <!-- 加载失败/无权限 -->
+  <view wx:elif="{{loadError}}" class="editor-state card">
+    <text class="state-symbol">🥄</text>
+    <text class="state-title">暂时无法编辑</text>
+    <text class="state-desc">{{loadError}}</text>
+    <view class="state-actions">
+      <view class="state-button" bindtap="retryLoad">重新加载</view>
+      <view class="state-link" bindtap="goBack">返回</view>
+    </view>
+  </view>
+
+  <block wx:else>
+    <view class="form-wrap">
+      <!-- 图片 -->
+      <view class="form-card card image-card">
+        <view wx:if="{{form.imageTempPath || form.imageFileID}}" class="image-preview">
+          <image
+            class="image"
+            src="{{form.imageTempPath || form.imageFileID}}"
+            mode="aspectFill"
+            bindtap="previewImage"
+          />
+          <view class="image-badge">菜品照片</view>
+          <view class="image-remove" catchtap="removeImage">×</view>
+        </view>
+        <view wx:else class="image-picker" bindtap="chooseImage">
+          <view class="camera-circle">
+            <text class="camera-symbol">📷</text>
+          </view>
+          <text class="picker-title">添加菜品照片</text>
+          <text class="picker-desc">支持拍照或从相册选择，建议使用横向图片</text>
+        </view>
+        <view wx:if="{{form.imageTempPath || form.imageFileID}}" class="image-actions">
+          <view class="image-action" bindtap="chooseImage">更换照片</view>
+          <view class="image-action image-action-danger" bindtap="removeImage">移除照片</view>
+        </view>
+      </view>
+
+      <!-- 基本信息 -->
+      <view class="form-card card">
+        <view class="form-heading">
+          <view class="heading-left">
+            <text class="heading-index">01</text>
+            <text class="heading-title">基本信息</text>
+          </view>
+          <text class="heading-note">带 * 为必填</text>
+        </view>
+
+        <view class="field">
+          <view class="field-label-row">
+            <text class="field-label">菜品名称 <text class="required">*</text></text>
+            <text class="field-count">{{form.title.length}}/40</text>
+          </view>
+          <input
+            class="field-input field-input-strong"
+            value="{{form.title}}"
+            placeholder="例如：番茄炒蛋"
+            placeholder-class="field-placeholder"
+            maxlength="40"
+            cursor-spacing="120"
+            bindinput="onTitleInput"
+          />
+        </view>
+
+        <view class="field">
+          <view class="field-label-row">
+            <text class="field-label">菜品简介</text>
+            <text class="field-count">{{form.description.length}}/300</text>
+          </view>
+          <textarea
+            class="field-textarea"
+            value="{{form.description}}"
+            placeholder="这道菜的味道、来历，或想记住的小故事…"
+            placeholder-class="field-placeholder"
+            maxlength="300"
+            auto-height
+            cursor-spacing="160"
+            bindinput="onDescriptionInput"
+          />
+        </view>
+
+        <view class="field-row">
+          <view class="field field-half">
+            <text class="field-label">耗时</text>
+            <view class="input-with-unit">
+              <input
+                class="field-input"
+                type="number"
+                value="{{form.cookTime}}"
+                placeholder="0"
+                placeholder-class="field-placeholder"
+                maxlength="3"
+                cursor-spacing="120"
+                bindinput="onCookTimeInput"
+              />
+              <text class="unit">分钟</text>
+            </view>
+          </view>
+
+          <view class="field field-half">
+            <text class="field-label">难度</text>
+            <picker
+              mode="selector"
+              range="{{difficulties}}"
+              value="{{difficultyIndex}}"
+              bindchange="onDifficultyChange"
+            >
+              <view class="picker-value">
+                <text>{{difficulties[difficultyIndex]}}</text>
+                <text class="picker-arrow">⌄</text>
+              </view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="field">
+          <text class="field-label">分类</text>
+          <view class="category-chips">
+            <view
+              wx:for="{{categories}}"
+              wx:key="*this"
+              class="category-chip {{form.category === item ? 'active' : ''}}"
+              data-value="{{item}}"
+              bindtap="selectCategory"
+            >{{item}}</view>
+          </view>
+          <input
+            class="field-input category-input"
+            value="{{form.category}}"
+            placeholder="也可以输入自定义分类"
+            placeholder-class="field-placeholder"
+            maxlength="20"
+            cursor-spacing="120"
+            bindinput="onCategoryInput"
+          />
+        </view>
+      </view>
+
+      <!-- 原材料 -->
+      <view class="form-card card">
+        <view class="form-heading">
+          <view class="heading-left">
+            <text class="heading-index">02</text>
+            <text class="heading-title">原材料</text>
+          </view>
+          <text class="heading-note">{{form.ingredients.length}} 条</text>
+        </view>
+
+        <view class="voice-tip">
+          <text class="voice-tip-icon">🎙</text>
+          <text>点击每行右侧的「语音」，说完后再点一次；录音会上传到云存储并调用腾讯云识别成文字</text>
+        </view>
+
+        <view class="ingredient-list">
+          <view
+            wx:for="{{form.ingredients}}"
+            wx:key="index"
+            class="ingredient-row"
+          >
+            <text class="row-index">{{index + 1}}</text>
+            <input
+              class="ingredient-input"
+              value="{{item}}"
+              placeholder="例如：番茄 2 个"
+              placeholder-class="field-placeholder"
+              maxlength="100"
+              cursor-spacing="130"
+              data-index="{{index}}"
+              bindinput="onIngredientInput"
+            />
+            <view
+              class="voice-btn {{voiceTargetType === 'ingredients' && voiceTargetIndex === index ? 'active' : ''}}"
+              data-type="ingredients"
+              data-index="{{index}}"
+              catchtap="toggleVoice"
+            >
+              <text class="voice-dot"></text>
+              <text wx:if="{{voiceTargetType === 'ingredients' && voiceTargetIndex === index}}">{{voiceStatus === 'recording' ? '停止' : (voiceStatus === 'processing' ? '识别中' : '语音')}}</text>
+              <text wx:else>语音</text>
+            </view>
+            <view class="row-remove" data-index="{{index}}" catchtap="removeIngredient">×</view>
+          </view>
+        </view>
+
+        <view class="add-row" bindtap="addIngredient">
+          <text class="add-plus">＋</text>
+          <text>添加原材料</text>
+        </view>
+      </view>
+
+      <!-- 制作步骤 -->
+      <view class="form-card card">
+        <view class="form-heading">
+          <view class="heading-left">
+            <text class="heading-index">03</text>
+            <text class="heading-title">制作步骤</text>
+          </view>
+          <text class="heading-note">{{form.steps.length}} 步</text>
+        </view>
+
+        <view class="step-editor-list">
+          <view
+            wx:for="{{form.steps}}"
+            wx:key="index"
+            class="step-editor"
+          >
+            <view class="step-editor-head">
+              <view class="step-badge">{{index + 1}}</view>
+              <text class="step-label">第 {{index + 1}} 步</text>
+              <view class="step-tools">
+                <view
+                  class="step-tool {{index === 0 ? 'disabled' : ''}}"
+                  data-index="{{index}}"
+                  data-dir="-1"
+                  catchtap="moveStep"
+                >↑</view>
+                <view
+                  class="step-tool {{index === form.steps.length - 1 ? 'disabled' : ''}}"
+                  data-index="{{index}}"
+                  data-dir="1"
+                  catchtap="moveStep"
+                >↓</view>
+                <view class="step-tool step-tool-danger" data-index="{{index}}" catchtap="removeStep">删除</view>
+              </view>
+            </view>
+
+            <textarea
+              class="step-textarea"
+              value="{{item}}"
+              placeholder="例如：番茄切块，鸡蛋打散备用…"
+              placeholder-class="field-placeholder"
+              maxlength="500"
+              auto-height
+              cursor-spacing="160"
+              data-index="{{index}}"
+              bindinput="onStepInput"
+            />
+
+            <view class="step-voice-row">
+              <view
+                class="voice-btn step-voice-btn {{voiceTargetType === 'steps' && voiceTargetIndex === index ? 'active' : ''}}"
+                data-type="steps"
+                data-index="{{index}}"
+                catchtap="toggleVoice"
+              >
+                <text class="voice-dot"></text>
+                <text wx:if="{{voiceTargetType === 'steps' && voiceTargetIndex === index}}">{{voiceStatus === 'recording' ? '停止语音' : (voiceStatus === 'processing' ? '识别中…' : '语音输入')}}</text>
+                <text wx:else>语音输入</text>
+              </view>
+              <text class="step-count">{{item.length}}/500</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="add-row" bindtap="addStep">
+          <text class="add-plus">＋</text>
+          <text>添加步骤</text>
+        </view>
+      </view>
+
+      <view class="editor-tip">
+        <text>小提示：语音识别结果会追加在输入框已有内容后面，识别后仍可继续手动修改。</text>
+      </view>
+    </view>
+
+    <!-- 录音状态悬浮条 -->
+    <view wx:if="{{voiceActive}}" class="voice-hud">
+      <view class="voice-pulse {{voiceStatus === 'recording' ? 'recording' : 'processing'}}">
+        <view class="pulse-core"></view>
+      </view>
+      <view class="voice-hud-copy">
+        <text class="voice-hud-title">{{voiceStatus === 'recording' ? '正在录音…' : '正在识别…'}}</text>
+        <text class="voice-hud-text">{{voicePreview || '请对着手机说话'}}</text>
+      </view>
+      <view wx:if="{{voiceStatus === 'recording'}}" class="voice-hud-stop" bindtap="stopVoice">结束</view>
+    </view>
+
+    <!-- 底部保存栏 -->
+    <view class="editor-footer">
+      <button class="footer-cancel" bindtap="cancel" disabled="{{saving}}">取消</button>
+      <button
+        class="footer-save"
+        bindtap="save"
+        loading="{{saving}}"
+        disabled="{{saving}}"
+      >{{saving ? '保存中…' : '保存菜谱'}}</button>
+    </view>
+  </block>
+</view>

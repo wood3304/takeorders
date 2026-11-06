@@ -1,0 +1,159 @@
+<view class="detail-page">
+  <!-- 首次加载骨架 -->
+  <view wx:if="{{loading && !recipe}}" class="detail-skeleton">
+    <view class="hero-skeleton shimmer"></view>
+    <view class="body-skeleton">
+      <view class="skeleton-line shimmer w70"></view>
+      <view class="skeleton-line shimmer w90"></view>
+      <view class="skeleton-line shimmer w50"></view>
+    </view>
+  </view>
+
+  <!-- 错误状态 -->
+  <view wx:elif="{{error}}" class="error-state card">
+    <text class="error-symbol">🍽</text>
+    <text class="error-title">这道菜暂时找不到</text>
+    <text class="error-desc">{{error}}</text>
+    <view class="error-actions">
+      <view class="state-button" bindtap="retryLoad">重新加载</view>
+      <navigator class="state-link" url="/pages/index/index" open-type="reLaunch">回到首页</navigator>
+    </view>
+  </view>
+
+  <!-- 菜谱正文 -->
+  <block wx:elif="{{recipe}}">
+    <view class="hero-media">
+      <image
+        wx:if="{{recipe.imageFileID}}"
+        class="hero-image"
+        src="{{recipe.imageFileID}}"
+        mode="aspectFill"
+      />
+      <view wx:else class="hero-image hero-empty">
+        <view class="empty-plate">
+          <text class="empty-emoji">🍲</text>
+        </view>
+        <text class="empty-text">这道菜还没有照片</text>
+      </view>
+      <view class="hero-shade"></view>
+
+      <view class="media-top">
+        <text class="media-category">{{recipe.categoryLabel}}</text>
+        <button class="share-chip" open-type="share" hover-class="share-chip-hover">
+          <text class="share-icon">↗</text>
+          <text>分享</text>
+        </button>
+      </view>
+
+      <view class="media-caption">
+        <text class="media-kicker">{{isOwner ? '我的私房菜' : '厨友的私房菜'}}</text>
+        <text class="media-title">{{recipe.title}}</text>
+      </view>
+    </view>
+
+    <view class="detail-body">
+      <!-- 简介与元信息 -->
+      <view class="intro-card card">
+        <text wx:if="{{recipe.description}}" class="intro-text">{{recipe.description}}</text>
+        <text wx:else class="intro-text intro-empty">这道菜还没有写简介，味道都在步骤里。</text>
+
+        <view class="meta-grid">
+          <view class="meta-item">
+            <text class="meta-label">耗时</text>
+            <text class="meta-value">{{recipe.cookTimeLabel || '未标注'}}</text>
+          </view>
+          <view class="meta-divider"></view>
+          <view class="meta-item">
+            <text class="meta-label">难度</text>
+            <text class="meta-value">{{recipe.difficultyLabel || '未标注'}}</text>
+          </view>
+          <view class="meta-divider"></view>
+          <view class="meta-item">
+            <text class="meta-label">用料</text>
+            <text class="meta-value">{{recipe.ingredientCount}} 项</text>
+          </view>
+          <view class="meta-divider"></view>
+          <view class="meta-item">
+            <text class="meta-label">步骤</text>
+            <text class="meta-value">{{recipe.stepCount}} 步</text>
+          </view>
+        </view>
+
+        <view class="intro-foot">
+          <text>{{isOwner ? '由我创建' : '来自其他厨友'}} · {{recipe.createdLabel}}</text>
+          <text wx:if="{{recipe.sourceRecipeId}}" class="copy-tag">导入副本</text>
+        </view>
+      </view>
+
+      <!-- 用料 -->
+      <view class="section-card card">
+        <view class="section-heading">
+          <view class="heading-left">
+            <text class="heading-index">01</text>
+            <text class="heading-title">用料清单</text>
+          </view>
+          <text class="heading-count">{{recipe.ingredientCount}} 项</text>
+        </view>
+
+        <view wx:if="{{recipe.ingredients.length}}" class="ingredient-list">
+          <view wx:for="{{recipe.ingredients}}" wx:key="index" class="ingredient-item">
+            <view class="ingredient-mark"></view>
+            <text class="ingredient-text">{{item}}</text>
+          </view>
+        </view>
+        <view wx:else class="section-empty">还没有填写原材料</view>
+      </view>
+
+      <!-- 步骤 -->
+      <view class="section-card card">
+        <view class="section-heading">
+          <view class="heading-left">
+            <text class="heading-index">02</text>
+            <text class="heading-title">做法步骤</text>
+          </view>
+          <text class="heading-count">{{recipe.stepCount}} 步</text>
+        </view>
+
+        <view wx:if="{{recipe.steps.length}}" class="step-list">
+          <view wx:for="{{recipe.steps}}" wx:key="index" class="step-item">
+            <view class="step-number-wrap">
+              <text class="step-number">{{index + 1}}</text>
+              <view wx:if="{{index < recipe.steps.length - 1}}" class="step-line"></view>
+            </view>
+            <text class="step-text">{{item}}</text>
+          </view>
+        </view>
+        <view wx:else class="section-empty">还没有填写制作步骤</view>
+      </view>
+
+      <view class="detail-end">
+        <text class="end-line"></text>
+        <text class="end-text">认真吃饭，好好生活</text>
+        <text class="end-line"></text>
+      </view>
+    </view>
+
+    <!-- 底部操作栏 -->
+    <view class="action-bar">
+      <view class="action-inner">
+        <block wx:if="{{isOwner}}">
+          <button
+            class="action-btn action-danger"
+            bindtap="deleteRecipe"
+            loading="{{deleting}}"
+            disabled="{{deleting || importing}}"
+          >{{deleting ? '删除中' : '删除'}}</button>
+          <button class="action-btn action-primary" bindtap="editRecipe">编辑菜谱</button>
+        </block>
+        <block wx:else>
+          <button
+            class="action-btn action-primary action-wide"
+            bindtap="importRecipe"
+            loading="{{importing}}"
+            disabled="{{importing}}"
+          >{{importing ? '正在复制…' : '导入菜谱'}}</button>
+        </block>
+      </view>
+    </view>
+  </block>
+</view>

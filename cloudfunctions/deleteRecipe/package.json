@@ -1,0 +1,9 @@
+{
+  "name": "deleteRecipe",
+  "version": "1.0.0",
+  "description": "删除自己的菜谱并清理未引用图片",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

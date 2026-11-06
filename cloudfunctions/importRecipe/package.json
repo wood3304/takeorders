@@ -1,0 +1,9 @@
+{
+  "name": "importRecipe",
+  "version": "1.0.0",
+  "description": "复制他人菜谱为当前用户副本",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

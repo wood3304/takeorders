@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "私房菜谱",
+  "navigationBarBackgroundColor": "#2E2A24",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#F7F3EA",
+  "backgroundTextStyle": "dark",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 100
+}

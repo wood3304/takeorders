@@ -1,0 +1,9 @@
+{
+  "name": "speechToText",
+  "version": "1.0.0",
+  "description": "腾讯云一句话识别 ASR（个人主体小程序语音转文字）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

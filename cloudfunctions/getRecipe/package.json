@@ -1,0 +1,9 @@
+{
+  "name": "getRecipe",
+  "version": "1.0.0",
+  "description": "获取菜谱详情",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

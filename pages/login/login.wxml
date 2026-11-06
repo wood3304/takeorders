@@ -1,0 +1,61 @@
+<view class="login-page">
+  <view class="ambient ambient-one"></view>
+  <view class="ambient ambient-two"></view>
+
+  <view class="login-hero">
+    <view class="logo-wrap">
+      <view class="logo-ring"></view>
+      <view class="logo">
+        <text class="logo-symbol">味</text>
+      </view>
+    </view>
+    <text class="brand-name">私房菜谱</text>
+    <text class="brand-slogan">把家的味道，认真记下来</text>
+  </view>
+
+  <view class="login-panel">
+    <view class="feature-list">
+      <view class="feature-item">
+        <view class="feature-icon icon-orange">记</view>
+        <view class="feature-copy">
+          <text class="feature-title">图文记录每一道菜</text>
+          <text class="feature-desc">用料、步骤、耗时与难度，一目了然</text>
+        </view>
+      </view>
+      <view class="feature-item">
+        <view class="feature-icon icon-green">声</view>
+        <view class="feature-copy">
+          <text class="feature-title">说句话就能记菜谱</text>
+          <text class="feature-desc">说出原材料和步骤，自动转成文字</text>
+        </view>
+      </view>
+      <view class="feature-item">
+        <view class="feature-icon icon-brown">享</view>
+        <view class="feature-copy">
+          <text class="feature-title">看见喜欢的，一键导入</text>
+          <text class="feature-desc">复制成自己的版本，原菜谱不受影响</text>
+        </view>
+      </view>
+    </view>
+
+    <button
+      class="btn-primary login-button"
+      bindtap="handleLogin"
+      loading="{{loading}}"
+      disabled="{{loading}}"
+    >
+      {{loading ? '正在登录…' : '微信一键登录'}}
+    </button>
+
+    <text wx:if="{{errorMessage}}" class="login-error">{{errorMessage}}</text>
+
+    <view class="privacy-note">
+      <text class="privacy-dot">·</text>
+      <text>登录仅获取微信 OpenID 作为身份标识，不读取头像、昵称或手机号。菜谱的编辑与删除均以云端 OpenID 校验为准。</text>
+    </view>
+  </view>
+
+  <view class="login-foot">
+    <text>一餐一饭，皆是生活</text>
+  </view>
+</view>

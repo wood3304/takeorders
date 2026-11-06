@@ -1,0 +1,153 @@
+/**app.wxss - 全局设计变量与通用组件样式**/
+page {
+  --bg: #f7f3ea;
+  --bg-deep: #efe7d8;
+  --surface: #fffdf9;
+  --surface-strong: #ffffff;
+  --ink: #2c2822;
+  --ink-soft: #5c554b;
+  --muted: #968c7e;
+  --line: #eadfce;
+  --brand: #e2603b;
+  --brand-deep: #c94927;
+  --brand-soft: #fbe6dc;
+  --green: #5f7d62;
+  --green-soft: #e8f0e6;
+  --danger: #c84b3a;
+  --shadow: 0 16rpx 44rpx rgba(92, 70, 39, 0.08);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, sans-serif;
+  font-size: 28rpx;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+view,
+text,
+input,
+textarea,
+button,
+scroll-view,
+image {
+  box-sizing: border-box;
+}
+
+button {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+button::after {
+  border: 0;
+}
+
+input,
+textarea {
+  font-family: inherit;
+}
+
+.page {
+  min-height: 100vh;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.card {
+  background: var(--surface-strong);
+  border: 1rpx solid rgba(234, 223, 206, 0.9);
+  border-radius: 28rpx;
+  box-shadow: var(--shadow);
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  padding: 0 40rpx;
+  border-radius: 46rpx;
+  background: linear-gradient(135deg, #ef7950 0%, var(--brand) 62%, var(--brand-deep) 100%);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+  box-shadow: 0 14rpx 28rpx rgba(226, 96, 59, 0.24);
+}
+
+.btn-primary[disabled] {
+  opacity: 0.58;
+  box-shadow: none;
+}
+
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  padding: 0 34rpx;
+  border-radius: 46rpx;
+  border: 1rpx solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 30rpx;
+  font-weight: 500;
+}
+
+.btn-danger-ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  padding: 0 34rpx;
+  border-radius: 46rpx;
+  border: 1rpx solid #f0c8c0;
+  background: #fff8f5;
+  color: var(--danger);
+  font-size: 30rpx;
+  font-weight: 500;
+}
+
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.line-2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}

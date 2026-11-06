@@ -1,0 +1,172 @@
+<view class="home">
+  <view class="hero">
+    <view class="hero-orbit orbit-one"></view>
+    <view class="hero-orbit orbit-two"></view>
+    <view class="hero-head">
+      <view class="hero-copy">
+        <text class="hero-eyebrow">{{greeting}} · 欢迎回来</text>
+        <text class="hero-title">今天想做点什么？</text>
+      </view>
+      <view class="avatar">
+        <text class="avatar-text">食</text>
+      </view>
+    </view>
+    <view class="hero-user">
+      <view class="status-dot"></view>
+      <text class="hero-user-text">{{openidMasked}}</text>
+      <text class="hero-divider">/</text>
+      <text class="hero-user-text">私房菜谱</text>
+    </view>
+  </view>
+
+  <view class="content">
+    <view class="search-card">
+      <text class="search-icon">⌕</text>
+      <input
+        class="search-input"
+        value="{{keyword}}"
+        placeholder="{{searchPlaceholder}}"
+        placeholder-class="search-placeholder"
+        confirm-type="search"
+        bindinput="onKeywordInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <view wx:if="{{keyword}}" class="search-clear" catchtap="clearKeyword">×</view>
+    </view>
+
+    <view class="switch-row">
+      <view class="segment">
+        <view
+          class="segment-item {{mode === 'mine' ? 'active' : ''}}"
+          data-mode="mine"
+          bindtap="switchMode"
+        >
+          我的菜谱
+        </view>
+        <view
+          class="segment-item {{mode === 'discover' ? 'active' : ''}}"
+          data-mode="discover"
+          bindtap="switchMode"
+        >
+          发现菜谱
+        </view>
+      </view>
+      <view class="create-mini" bindtap="createRecipe">
+        <text class="create-plus">＋</text>
+        <text>新建</text>
+      </view>
+    </view>
+
+    <view class="section-head">
+      <view class="section-copy">
+        <text class="section-title">{{mode === 'mine' ? '我的私房菜单' : '大家的私房菜单'}}</text>
+        <text class="section-sub">{{mode === 'mine' ? '每一道，都是你的生活记录' : '看中哪道，导入成自己的版本'}}</text>
+      </view>
+      <text wx:if="{{list.length}}" class="list-count">{{list.length}}{{hasMore ? '+' : ''}} 道</text>
+    </view>
+
+    <!-- 首次加载骨架屏 -->
+    <view wx:if="{{loading && !list.length}}" class="skeleton-list">
+      <view wx:for="{{skeletonItems}}" wx:key="*this" class="skeleton-card card">
+        <view class="skeleton-cover shimmer"></view>
+        <view class="skeleton-body">
+          <view class="skeleton-line shimmer w60"></view>
+          <view class="skeleton-line shimmer w90"></view>
+          <view class="skeleton-line shimmer w40"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载失败 -->
+    <view wx:if="{{loadError && !loading && !list.length}}" class="state-card card">
+      <text class="state-symbol">🫕</text>
+      <text class="state-title">菜谱暂时没有端上来</text>
+      <text class="state-desc">{{loadError}}</text>
+      <view class="state-button" bindtap="retryLoad">重新加载</view>
+    </view>
+
+    <!-- 空状态 -->
+    <view
+      wx:if="{{!loading && !loadError && !list.length}}"
+      class="state-card card"
+    >
+      <text class="state-symbol">{{keyword ? '🔍' : '🍽'}}</text>
+      <text class="state-title">
+        {{keyword ? '没有找到相关菜谱' : (mode === 'mine' ? '你的菜单还是一张白纸' : '还没有其他人的菜谱')}}
+      </text>
+      <text class="state-desc">
+        {{keyword ? '换个关键词试试，或清空搜索查看全部' : (mode === 'mine' ? '从一道拿手菜开始，记下属于你的味道' : '先去创建一道菜谱，让这里有第一缕烟火气')}}
+      </text>
+      <view wx:if="{{keyword}}" class="state-button" bindtap="clearKeyword">清空搜索</view>
+      <view wx:else class="state-button" bindtap="createRecipe">创建第一道菜</view>
+    </view>
+
+    <!-- 菜谱列表 -->
+    <view wx:if="{{list.length}}" class="recipe-list">
+      <view
+        wx:for="{{list}}"
+        wx:key="id"
+        class="recipe-card card"
+        data-id="{{item.id}}"
+        bindtap="openDetail"
+      >
+        <view class="cover-wrap">
+          <image
+            wx:if="{{item.imageFileID}}"
+            class="cover"
+            src="{{item.imageFileID}}"
+            mode="aspectFill"
+            lazy-load
+          />
+          <view wx:else class="cover cover-empty">
+            <text class="cover-emoji">🍲</text>
+          </view>
+          <text class="cover-badge">{{item.categoryLabel}}</text>
+        </view>
+
+        <view class="recipe-info">
+          <view class="recipe-topline">
+            <text class="recipe-time">{{item.cookTimeLabel || '耗时未标注'}}</text>
+            <text wx:if="{{item.difficultyLabel}}" class="difficulty {{item.difficultyClass}}">{{item.difficultyLabel}}</text>
+          </view>
+
+          <text class="recipe-title ellipsis">{{item.title}}</text>
+          <text class="recipe-desc line-2">{{item.description || '这道菜还没有写简介'}}</text>
+
+          <view class="recipe-meta">
+            <text>{{item.ingredientCount}} 种用料</text>
+            <text class="meta-dot">·</text>
+            <text>{{item.stepCount}} 个步骤</text>
+          </view>
+
+          <view class="card-footer">
+            <text class="updated">{{item.updatedLabel}}更新</text>
+            <view wx:if="{{mode === 'mine'}}" class="card-actions">
+              <view class="mini-btn" catchtap="editRecipe" data-id="{{item.id}}">编辑</view>
+              <view
+                class="mini-btn danger"
+                catchtap="deleteRecipe"
+                data-id="{{item.id}}"
+                data-title="{{item.title}}"
+              >{{deletingId === item.id ? '删除中' : '删除'}}</view>
+            </view>
+            <view wx:else class="view-link">
+              <text>查看 / 导入</text>
+              <text class="view-arrow">→</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{list.length}}" class="list-tail">
+      <text wx:if="{{loadingMore}}">正在加载更多…</text>
+      <text wx:elif="{{!hasMore}}">已经到底啦 · 共 {{list.length}} 道</text>
+      <text wx:else>上滑加载更多</text>
+    </view>
+  </view>
+
+  <view class="fab" bindtap="createRecipe" aria-role="button" aria-label="新建菜谱">
+    <text class="fab-plus">＋</text>
+  </view>
+</view>
