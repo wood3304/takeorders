@@ -169,6 +169,47 @@ wx.getRecorderManager 录音
 >
 > 腾讯云 ASR 按调用量计费/提供一定免费额度，具体以腾讯云账单为准。官方文档：[一句话识别](https://cloud.tencent.com/document/product/1093/35646)、[签名 v3](https://cloud.tencent.com/document/api/1093/35641)。
 
+### 8.4 语音没有调用/没有日志怎么查
+
+先确认小程序端和云函数端都是最新代码：重新编译，并重新上传 `speechToText`、`listRecipes`、`getRecipe`。
+
+在开发者工具 Console 中点击语音，按顺序观察日志：
+
+```text
+[voice] tap
+[voice] record permission granted
+[recorder] start
+[recorder] onStart
+[voice] recording started
+[voice] stop requested
+[recorder] onStop
+[voice] recording result
+[voice] uploading audio
+[voice] audio uploaded
+[voice] calling speechToText
+[voice] speechToText returned
+```
+
+| 最后出现的日志 | 说明 |
+| --- | --- |
+| 没有 `[voice] tap` | 页面还是旧代码/旧缓存，或按钮事件没有触发；重新编译真机预览。 |
+| 停在 `[voice] tap` | 录音权限申请失败或页面被判定 hidden；查看是否有错误 toast/弹窗，真机测试。 |
+| 有 `[recorder] start` 但没有 `onStop` | 录音没有启动或被系统中断；检查麦克风权限、真机环境、录音格式兼容性。 |
+| 有 `[voice] recording result` 但没有 `uploading` 后成功 | 云存储上传失败；检查存储权限和网络。 |
+| 有 `[voice] calling speechToText` 但云函数无日志 | `speechToText` 未部署到当前环境；确认云开发控制台当前环境与 `CLOUD_ENV` 一致。 |
+| 云函数有 `[speechToText] invoked` 但返回 `ASR_NOT_CONFIGURED` | 未配置 `TENCENT_SECRET_ID` / `TENCENT_SECRET_KEY`。 |
+| 云函数日志显示 `[speechToText] success` | ASR 成功，检查客户端是否收到文字以及目标输入框索引。 |
+
+还可以在 Console 直接测试云函数是否部署：
+
+```js
+wx.cloud.callFunction({ name: 'speechToText', data: {} }).then(console.log)
+```
+
+- 返回 `AUDIO_INVALID`：云函数已部署，且入口日志会出现 `[speechToText] invoked`；
+- 返回 `FUNCTION_NOT_FOUND` 或调用失败：云函数未部署到当前环境；
+- 返回 `ASR_NOT_CONFIGURED`：云函数已部署，但缺少腾讯云环境变量。
+
 ## 9. 配置存储权限
 
 云开发控制台 → 存储 → 权限设置，选择：
@@ -180,6 +221,8 @@ wx.getRecorderManager 录音
 - 详情页需要展示其他用户上传的菜品图；
 - 客户端需要上传自己的图片和临时录音；
 - 云函数删除文件时使用管理端权限，不受客户端写限制。
+
+> 新版 `listRecipes` / `getRecipe` 还会通过云函数管理端生成临时 HTTPS 图片地址，作为“别人看不到图”的兜底；但推荐仍然把存储读权限设为所有用户可读，`imageFileID` 直接展示和编辑页预览会更稳定。
 
 上传路径由代码生成为：
 
@@ -285,7 +328,8 @@ wx.cloud.callFunction({
 | 登录提示“云函数未部署” | 对应云函数未上传，或当前环境选错；重新上传 `login` 并确认环境。 |
 | `COLLECTION_MISSING` | 没有创建 `recipes` 集合，或集合名拼写错误（区分大小写）。 |
 | 列表为空但数据库有数据 | 检查记录的 `_openid` 是否为当前用户；发现页会排除自己的记录。 |
-| 图片不显示 | 存储权限不是“所有用户可读”，或 `imageFileID` 为空；检查云存储文件是否存在。 |
+| 图片不显示 | 先确认已重新部署 `listRecipes`/`getRecipe` 并重新编译；响应里应有 `imageUrl`。如果 `imageUrl` 为空，检查 `imageFileID` 是否为空、云存储文件是否被删除；如果只有别人看不到图片，优先检查云存储权限是否为“所有用户可读，仅创建者可写”。 |
+| 发现页别人菜谱无图 | 新版本 `listRecipes` 会批量生成临时 `imageUrl`。重新部署该云函数并刷新；若仍无图，查看云函数日志里 `getTempFileURL failed` 的错误。 |
 | 图片上传失败 | 未登录、存储写权限不足、图片超过 8MB，或网络异常；查看 Console 的 `wx.cloud.uploadFile` 错误。 |
 | 语音按钮无反应 | 未声明麦克风隐私、用户拒绝录音权限，或 `wx.getRecorderManager` 不可用；检查授权设置。 |
 | 提示“语音识别未配置” | `speechToText` 云函数没有配置 `TENCENT_SECRET_ID` / `TENCENT_SECRET_KEY`，配置后重新部署。 |

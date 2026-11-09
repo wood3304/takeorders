@@ -210,7 +210,15 @@ exports.main = async (event) => {
   const format = event && typeof event.format === 'string' ? event.format.toLowerCase() : 'mp3'
   const duration = Number(event && event.duration) || 0
 
+  console.log('[speechToText] invoked', {
+    hasOpenid: !!OPENID,
+    hasFileID: !!fileID,
+    format,
+    duration
+  })
+
   if (!isUserAudioFile(fileID, OPENID)) {
+    console.warn('[speechToText] invalid audio path')
     return fail('AUDIO_INVALID', '录音文件地址不合法')
   }
   if (ALLOWED_FORMATS.indexOf(format) < 0) {
@@ -227,12 +235,18 @@ exports.main = async (event) => {
   const region = (process.env.TENCENT_ASR_REGION || '').trim() || 'ap-shanghai'
 
   if (!secretId || !secretKey) {
+    console.warn('[speechToText] missing TENCENT_SECRET_ID / TENCENT_SECRET_KEY')
     await cleanupAudio(fileID)
     return fail(
       'ASR_NOT_CONFIGURED',
       '云函数未配置腾讯云密钥，请设置 TENCENT_SECRET_ID 和 TENCENT_SECRET_KEY'
     )
   }
+  console.log('[speechToText] credentials present', {
+    hasSecretId: true,
+    hasSecretKey: true,
+    region
+  })
 
   try {
     const download = await cloud.downloadFile({ fileID })
@@ -245,12 +259,22 @@ exports.main = async (event) => {
       return fail('ASR_AUDIO_TOO_LARGE', '录音文件超过 3MB，请缩短语音')
     }
 
+    console.log('[speechToText] calling Tencent ASR', {
+      bytes: audioBuffer.length,
+      format,
+      region
+    })
     const result = await requestAsr({
       secretId,
       secretKey,
       region,
       audioBuffer,
       format
+    })
+    console.log('[speechToText] success', {
+      requestId: result.requestId,
+      textLength: (result.text || '').length,
+      audioDuration: result.audioDuration
     })
 
     return ok({

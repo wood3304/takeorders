@@ -52,10 +52,24 @@ exports.main = async (event) => {
     const doc = result && result.data
     if (!doc) return fail('NOT_FOUND', '菜谱不存在或已被删除')
 
+    // 生成临时 HTTPS 地址，保证非作者也能看到图片，
+    // 不要求云存储必须开放“所有用户可读”的 fileID 直读权限。
+    let imageUrl = ''
+    if (doc.imageFileID && String(doc.imageFileID).startsWith('cloud://')) {
+      try {
+        const urlResult = await cloud.getTempFileURL({ fileList: [doc.imageFileID] })
+        const file = urlResult.fileList && urlResult.fileList[0]
+        imageUrl = (file && file.tempFileURL) || ''
+      } catch (err) {
+        console.warn('[getRecipe] getTempFileURL failed', err)
+      }
+    }
+
     return ok({
       id: doc._id,
       title: safeText(doc.title, 80),
       imageFileID: safeText(doc.imageFileID, 1024),
+      imageUrl,
       description: safeText(doc.description, 300),
       category: safeText(doc.category, 40),
       cookTime: Number(doc.cookTime) || 0,

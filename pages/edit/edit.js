@@ -73,6 +73,7 @@ Page({
       cookTime: '',
       difficulty: '',
       imageFileID: '',
+      imageUrl: '',
       imageTempPath: '',
       ingredients: [''],
       steps: ['']
@@ -166,6 +167,7 @@ Page({
           cookTime: data.cookTime ? String(data.cookTime) : '',
           difficulty: data.difficulty || '',
           imageFileID: data.imageFileID || '',
+          imageUrl: data.imageUrl || '',
           imageTempPath: '',
           ingredients,
           steps
@@ -246,7 +248,7 @@ Page({
   },
 
   async previewImage() {
-    let url = this.data.form.imageTempPath
+    let url = this.data.form.imageTempPath || this.data.form.imageUrl
     try {
       if (!url && this.data.form.imageFileID) {
         const res = await wx.cloud.getTempFileURL({ fileList: [this.data.form.imageFileID] })
@@ -265,6 +267,7 @@ Page({
     if (this.data.saving) return
     this.setData({
       'form.imageTempPath': '',
+      'form.imageUrl': '',
       'form.imageFileID': ''
     })
   },
@@ -388,6 +391,13 @@ Page({
     const type = event.currentTarget.dataset.type
     const index = Number(event.currentTarget.dataset.index)
     if (!type || Number.isNaN(index)) return
+    console.info('[voice] tap', {
+      type,
+      index,
+      status: this.data.voiceStatus,
+      saving: this.data.saving,
+      pageHidden: !!this.pageHidden
+    })
 
     if (this.data.voiceStatus === 'recording') {
       if (this.data.voiceTargetType === type && this.data.voiceTargetIndex === index) {
@@ -413,13 +423,22 @@ Page({
     this.voiceStarting = true
     try {
       await recorder.ensureRecordPermission()
+      console.info('[voice] record permission granted')
     } catch (err) {
       this.voiceStarting = false
+      console.error('[voice] record permission failed', err)
       this.handleSpeechError(err)
       return
     }
     this.voiceStarting = false
-    if (this.unloaded || this.data.saving || this.pageHidden) return
+    if (this.unloaded || this.data.saving || this.pageHidden) {
+      console.warn('[voice] skip start', {
+        unloaded: !!this.unloaded,
+        saving: this.data.saving,
+        pageHidden: !!this.pageHidden
+      })
+      return
+    }
 
     // 每次录音/识别一个 jobId，页面隐藏、超时或新录音后旧任务自动作废
     const jobId = (this.voiceJobId || 0) + 1
@@ -437,12 +456,14 @@ Page({
       recorder.start({
         onStart: () => {
           if (jobId !== this.voiceJobId || this.unloaded) return
+          console.info('[voice] recording started', { jobId, type, index })
           this.setData({ voicePreview: '正在录音，再点一次麦克风结束' })
         },
         onStop: (res) => this.handleRecordingStop(res, jobId),
         onError: (res) => this.handleRecorderError(res, jobId)
       })
     } catch (err) {
+      console.error('[voice] recorder start failed', err)
       this.voiceJobId = jobId + 1
       this.voiceTarget = null
       this.resetVoice()
@@ -453,6 +474,7 @@ Page({
   stopVoice() {
     if (this.data.voiceStatus !== 'recording') return
     const jobId = this.voiceJobId
+    console.info('[voice] stop requested', { jobId })
     this.setData({
       voiceStatus: 'processing',
       voicePreview: '正在识别，请稍候…'
@@ -486,6 +508,12 @@ Page({
     }
 
     const tempFilePath = res && res.tempFilePath
+    console.info('[voice] recording result', {
+      jobId,
+      duration: res && res.duration,
+      fileSize: res && res.fileSize,
+      hasTempFile: !!tempFilePath
+    })
     if (!tempFilePath) {
       this.handleRecorderError({ errMsg: '未获取到录音文件，请重试' }, jobId)
       return
@@ -506,13 +534,22 @@ Page({
 
     let fileID = ''
     try {
+      console.info('[voice] uploading audio')
       fileID = await this.uploadVoice(tempFilePath)
+      console.info('[voice] audio uploaded')
       if (jobId !== this.voiceJobId) return
 
+      console.info('[voice] calling speechToText', {
+        duration: Number(res.duration) || 0
+      })
       const data = await callFunction('speechToText', {
         fileID,
         format: 'mp3',
         duration: Number(res.duration) || 0
+      })
+      console.info('[voice] speechToText returned', {
+        textLength: ((data && data.text) || '').length,
+        requestId: data && data.requestId
       })
       if (jobId !== this.voiceJobId) return
 
@@ -524,7 +561,7 @@ Page({
       this.appendVoiceText(target, text)
     } catch (err) {
       if (jobId !== this.voiceJobId) return
-      console.error('[speechToText]', err)
+      console.error('[voice] recognize failed', err)
       this.handleVoiceServiceError(err)
     } finally {
       if (jobId === this.voiceJobId) {
@@ -556,6 +593,7 @@ Page({
 
   handleRecorderError(res, jobId) {
     if (jobId !== this.voiceJobId) return
+    console.error('[voice] recorder error callback', res)
     if (this.voiceStopTimer) {
       clearTimeout(this.voiceStopTimer)
       this.voiceStopTimer = null
@@ -645,6 +683,7 @@ Page({
       if (!res.fileID) throw new Error('empty fileID')
       return res.fileID
     } catch (err) {
+      console.error('[voice] upload failed', err)
       const error = new Error('录音上传失败，请检查网络或存储权限')
       error.code = 'UPLOAD_FAILED'
       throw error

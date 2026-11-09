@@ -52,6 +52,7 @@
         "id": "a1b2c3",
         "title": "番茄炒蛋",
         "imageFileID": "cloud://...",
+        "imageUrl": "https://临时签名地址...",
         "description": "酸甜下饭",
         "category": "家常菜",
         "cookTime": 15,
@@ -70,6 +71,8 @@
 ```
 
 注意：不返回字段 `_openid`，也不返回完整用料/步骤。
+
+`imageUrl` 是云函数管理端调用 `cloud.getTempFileURL` 生成的临时 HTTPS 地址，客户端优先使用它展示图片；这样即使云存储是“仅创建者可读”，其他用户也能正常看到菜品图。临时地址过期后重新进入列表会重新生成。
 
 ## 3. `getRecipe`
 
@@ -90,6 +93,7 @@
     "id": "a1b2c3",
     "title": "番茄炒蛋",
     "imageFileID": "cloud://...",
+    "imageUrl": "https://临时签名地址...",
     "description": "酸甜下饭",
     "category": "家常菜",
     "cookTime": 15,

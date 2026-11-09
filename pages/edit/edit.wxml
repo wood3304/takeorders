@@ -26,10 +26,10 @@
     <view class="form-wrap">
       <!-- 图片 -->
       <view class="form-card card image-card">
-        <view wx:if="{{form.imageTempPath || form.imageFileID}}" class="image-preview">
+        <view wx:if="{{form.imageTempPath || form.imageUrl || form.imageFileID}}" class="image-preview">
           <image
             class="image"
-            src="{{form.imageTempPath || form.imageFileID}}"
+            src="{{form.imageTempPath || form.imageUrl || form.imageFileID}}"
             mode="aspectFill"
             bindtap="previewImage"
           />
@@ -43,7 +43,7 @@
           <text class="picker-title">添加菜品照片</text>
           <text class="picker-desc">支持拍照或从相册选择，建议使用横向图片</text>
         </view>
-        <view wx:if="{{form.imageTempPath || form.imageFileID}}" class="image-actions">
+        <view wx:if="{{form.imageTempPath || form.imageUrl || form.imageFileID}}" class="image-actions">
           <view class="image-action" bindtap="chooseImage">更换照片</view>
           <view class="image-action image-action-danger" bindtap="removeImage">移除照片</view>
         </view>

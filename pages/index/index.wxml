@@ -112,9 +112,9 @@
       >
         <view class="cover-wrap">
           <image
-            wx:if="{{item.imageFileID}}"
+            wx:if="{{item.imageUrl || item.imageFileID}}"
             class="cover"
-            src="{{item.imageFileID}}"
+            src="{{item.imageUrl || item.imageFileID}}"
             mode="aspectFill"
             lazy-load
           />

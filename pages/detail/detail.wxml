@@ -24,9 +24,9 @@
   <block wx:elif="{{recipe}}">
     <view class="hero-media">
       <image
-        wx:if="{{recipe.imageFileID}}"
+        wx:if="{{recipe.imageUrl || recipe.imageFileID}}"
         class="hero-image"
-        src="{{recipe.imageFileID}}"
+        src="{{recipe.imageUrl || recipe.imageFileID}}"
         mode="aspectFill"
       />
       <view wx:else class="hero-image hero-empty">

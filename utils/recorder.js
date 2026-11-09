@@ -18,12 +18,18 @@ function attachCallbacks() {
   if (!manager) return
 
   manager.onStart = (res) => {
+    console.info('[recorder] onStart')
     if (activeHandlers && typeof activeHandlers.onStart === 'function') {
       activeHandlers.onStart(res)
     }
   }
   manager.onStop = (res) => {
     recording = false
+    console.info('[recorder] onStop', {
+      duration: res && res.duration,
+      fileSize: res && res.fileSize,
+      hasTempFile: !!(res && res.tempFilePath)
+    })
     const handlers = activeHandlers
     activeHandlers = null
     if (handlers && typeof handlers.onStop === 'function') {
@@ -32,6 +38,7 @@ function attachCallbacks() {
   }
   manager.onError = (res) => {
     recording = false
+    console.error('[recorder] onError', res)
     const handlers = activeHandlers
     activeHandlers = null
     if (handlers && typeof handlers.onError === 'function') {
@@ -102,6 +109,11 @@ function start(handlers) {
   const instance = ensureManager()
   activeHandlers = handlers || {}
   recording = true
+  console.info('[recorder] start', {
+    duration: 55000,
+    sampleRate: 16000,
+    format: 'mp3'
+  })
   try {
     instance.start({
       duration: 55000,
@@ -111,6 +123,7 @@ function start(handlers) {
       format: 'mp3'
     })
   } catch (err) {
+    console.error('[recorder] start failed', err)
     activeHandlers = null
     recording = false
     throw createRecorderError('录音启动失败，请检查麦克风权限', 'RECORD_START_FAILED')
@@ -120,6 +133,7 @@ function start(handlers) {
 function stop() {
   if (!manager || !recording) return
   recording = false
+  console.info('[recorder] stop requested')
   try {
     manager.stop()
   } catch (err) {

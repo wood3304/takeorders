@@ -209,6 +209,15 @@ const mockCloud = {
   async deleteFile({ fileList }) {
     state.deletedFiles.push(...fileList)
     return { fileList: fileList.map((fileID) => ({ fileID, status: 0 })) }
+  },
+  async getTempFileURL({ fileList }) {
+    return {
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        tempFileURL: `https://temp.example/${encodeURIComponent(fileID)}`,
+        status: 0
+      }))
+    }
   }
 }
 
@@ -256,6 +265,10 @@ async function main() {
 
   const mineA = await invoke('listRecipes', userA, { scope: 'mine', keyword: '番茄' })
   assert(mineA.success && mineA.data.list.length === 1, 'A should see own recipe')
+  assert(
+    mineA.data.list[0].imageUrl.startsWith('https://temp.example/'),
+    'list should include a temporary image URL'
+  )
 
   const discoverA = await invoke('listRecipes', userA, { scope: 'discover' })
   assert(discoverA.success && discoverA.data.list.length === 0, 'discover excludes own recipe')

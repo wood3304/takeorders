@@ -35,11 +35,12 @@ function safeText(value, maxLength) {
   return typeof value === 'string' ? value.slice(0, maxLength) : ''
 }
 
-function toListItem(doc, isOwner) {
+function toListItem(doc, isOwner, imageUrlMap) {
   return {
     id: doc._id,
     title: safeText(doc.title, 80),
     imageFileID: safeText(doc.imageFileID, 1024),
+    imageUrl: imageUrlMap[doc.imageFileID] || '',
     description: safeText(doc.description, 300),
     category: safeText(doc.category, 40),
     cookTime: Number(doc.cookTime) || 0,
@@ -50,6 +51,35 @@ function toListItem(doc, isOwner) {
     createdAt: toMillis(doc.createdAt),
     updatedAt: toMillis(doc.updatedAt),
     isOwner
+  }
+}
+
+/**
+ * 通过云函数管理端批量生成临时 HTTPS 图片地址。
+ * 这样即使云存储设置为“仅创建者可读”，其他用户也能在列表里看到菜品图。
+ */
+async function buildImageUrlMap(docs) {
+  const fileIDs = Array.from(
+    new Set(
+      docs
+        .map((doc) => doc.imageFileID)
+        .filter((fileID) => typeof fileID === 'string' && fileID.startsWith('cloud://'))
+    )
+  ).slice(0, 50)
+  if (!fileIDs.length) return {}
+
+  try {
+    const result = await cloud.getTempFileURL({ fileList: fileIDs })
+    const map = {}
+    ;(result.fileList || []).forEach((item) => {
+      if (item.fileID && item.tempFileURL) {
+        map[item.fileID] = item.tempFileURL
+      }
+    })
+    return map
+  } catch (err) {
+    console.warn('[listRecipes] getTempFileURL failed', err)
+    return {}
   }
 }
 
@@ -103,8 +133,10 @@ exports.main = async (event) => {
 
     const docs = result.data || []
     const hasMore = docs.length > limit
+    const pageDocs = docs.slice(0, limit)
+    const imageUrlMap = await buildImageUrlMap(pageDocs)
     // scope=mine 的记录一定属于当前用户；scope=discover 已排除当前用户
-    const list = docs.slice(0, limit).map((doc) => toListItem(doc, scope === 'mine'))
+    const list = pageDocs.map((doc) => toListItem(doc, scope === 'mine', imageUrlMap))
 
     return ok({ list, hasMore })
   } catch (err) {
