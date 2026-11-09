@@ -178,6 +178,7 @@ wx.getRecorderManager 录音
 ```text
 [voice] tap
 [privacy] setting
+[recorder] callbacks attached
 [voice] record permission granted
 [recorder] start
 [recorder] onStart
@@ -362,11 +363,20 @@ wx.cloud.callFunction({
 
 ## 15. 本地校验说明
 
+```bash
+node scripts/verify-cloud.js
+node scripts/verify-recorder.js
+```
+
+- `verify-cloud.js`：云函数业务逻辑、权限、导入、图片引用计数、TC3 签名。
+- `verify-recorder.js`：Mock `wx.getRecorderManager`，验证录音回调使用 `onStart/onStop/onError` 注册方法，以及录音参数正确。
+
 项目已通过：
 
 - 全部 `.js` 文件的 `node --check` 语法校验；
 - 全部 `.json` 文件的 `JSON.parse` 校验；
 - 页面路径、云函数目录和 `app.json` 配置的人工检查；
+- 录音回调注册回归测试；
 - `speechToText` 的腾讯云 TC3 签名格式检查（不包含真实密钥，无法代替真实 ASR 联调）。
 
 由于当前环境没有微信开发者工具和你的云环境，未执行真机 UI 与云函数联调。按本文完成部署后，建议先按第 12 节逐项验收。

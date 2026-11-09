@@ -224,9 +224,12 @@ TENCENT_ASR_REGION=ap-shanghai
 ```bash
 # 云函数业务逻辑（内存 Mock，不需要云环境）
 node scripts/verify-cloud.js
+
+# 录音回调注册回归测试（Mock wx.getRecorderManager）
+node scripts/verify-recorder.js
 ```
 
-该测试覆盖创建、列表、搜索、详情、越权编辑/删除、导入独立副本、图片引用计数清理，以及 `speechToText` 的腾讯云 TC3 签名格式。它不能替代微信开发者工具中的真实云环境/ASR 联调。
+该测试覆盖创建、列表、搜索、详情、越权编辑/删除、导入独立副本、图片引用计数清理，以及 `speechToText` 的腾讯云 TC3 签名格式。录音测试覆盖 `onStart/onStop/onError` 注册方式、录音参数和页面释放后的回调可用性。它不能替代微信开发者工具中的真实云环境/ASR 联调。
 
 项目还已通过全部 `.js` 的 `node --check` 与全部 `.json` 的 `JSON.parse` 校验。
 

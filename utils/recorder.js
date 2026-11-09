@@ -5,8 +5,7 @@
 let manager = null
 let activeHandlers = null
 let recording = false
-
-function noop() {}
+let callbacksAttached = false
 
 function createRecorderError(message, code) {
   const error = new Error(message)
@@ -15,15 +14,26 @@ function createRecorderError(message, code) {
 }
 
 function attachCallbacks() {
-  if (!manager) return
+  if (!manager || callbacksAttached) return
 
-  manager.onStart = (res) => {
+  // 注意：RecorderManager 的 onStart/onStop/onError 是注册方法，
+  // 必须调用 manager.onStart(fn)，不能直接赋值 manager.onStart = fn，
+  // 否则微信不会回调，表现为“录音开始后一直没有 onStop/上传/云函数日志”。
+  if (
+    typeof manager.onStart !== 'function' ||
+    typeof manager.onStop !== 'function' ||
+    typeof manager.onError !== 'function'
+  ) {
+    throw createRecorderError('当前微信版本录音接口不完整，请升级微信', 'RECORDER_UNAVAILABLE')
+  }
+
+  manager.onStart((res) => {
     console.info('[recorder] onStart')
     if (activeHandlers && typeof activeHandlers.onStart === 'function') {
       activeHandlers.onStart(res)
     }
-  }
-  manager.onStop = (res) => {
+  })
+  manager.onStop((res) => {
     recording = false
     console.info('[recorder] onStop', {
       duration: res && res.duration,
@@ -35,8 +45,8 @@ function attachCallbacks() {
     if (handlers && typeof handlers.onStop === 'function') {
       handlers.onStop(res)
     }
-  }
-  manager.onError = (res) => {
+  })
+  manager.onError((res) => {
     recording = false
     console.error('[recorder] onError', res)
     const handlers = activeHandlers
@@ -44,7 +54,9 @@ function attachCallbacks() {
     if (handlers && typeof handlers.onError === 'function') {
       handlers.onError(res)
     }
-  }
+  })
+  callbacksAttached = true
+  console.info('[recorder] callbacks attached')
 }
 
 function ensureManager() {
@@ -154,24 +166,13 @@ function isRecording() {
 }
 
 /**
- * 页面卸载时释放回调，避免上一次录音的 onStop 回填到新页面。
+ * 页面卸载时释放当前页面的回调。
+ * 注意不要覆盖 manager.onStart/onStop/onError 方法，否则下一次进入编辑页
+ * 录音会永远收不到回调；这里只清空当前页面的事件处理器。
  */
 function release() {
-  if (!manager) {
-    activeHandlers = null
-    recording = false
-    return
-  }
   activeHandlers = null
   recording = false
-  try {
-    manager.stop()
-  } catch (err) {
-    console.warn('[recorder] release stop failed', err)
-  }
-  manager.onStart = noop
-  manager.onStop = noop
-  manager.onError = noop
 }
 
 module.exports = {
