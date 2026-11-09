@@ -84,7 +84,15 @@ function ensureRecordPermission() {
         wx.authorize({
           scope: 'scope.record',
           success: () => resolve(),
-          fail: () => {
+          fail: (err) => {
+            const message = (err && err.errMsg) || ''
+            if (/privacy|banned|隐私/i.test(message)) {
+              reject(createRecorderError(
+                '小程序隐私接口未配置或未授权，请在后台配置用户隐私保护指引',
+                'PRIVACY_NOT_CONFIGURED'
+              ))
+              return
+            }
             reject(createRecorderError('未获得录音权限，语音输入无法使用', 'RECORD_DENIED'))
           }
         })

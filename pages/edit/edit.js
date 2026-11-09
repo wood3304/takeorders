@@ -85,7 +85,9 @@ Page({
     voiceActive: false,
     voiceTargetType: '',
     voiceTargetIndex: -1,
-    voicePreview: ''
+    voicePreview: '',
+    showPrivacy: false,
+    privacyContractName: '《用户隐私保护指引》'
   },
 
   onLoad(options) {
@@ -196,6 +198,76 @@ Page({
     }
   },
 
+  // ---------------- 隐私授权 ----------------
+  /**
+   * 在调用麦克风/相册/相机等隐私接口前检查隐私协议。
+   * 如果用户还没同意，展示编辑页内的隐私弹窗；
+   * 弹窗里的 <button open-type="agreePrivacyAuthorization"> 会完成微信侧授权。
+   */
+  ensurePrivacyAuthorization() {
+    if (typeof wx.getPrivacySetting !== 'function') {
+      return Promise.resolve()
+    }
+    return new Promise((resolve, reject) => {
+      wx.getPrivacySetting({
+        success: (res) => {
+          console.info('[privacy] setting', {
+            needAuthorization: !!res.needAuthorization,
+            privacyContractName: res.privacyContractName || ''
+          })
+          if (!res.needAuthorization) {
+            resolve()
+            return
+          }
+          this.privacyResolve = resolve
+          this.privacyReject = reject
+          this.setData({
+            showPrivacy: true,
+            privacyContractName: res.privacyContractName || '《用户隐私保护指引》'
+          })
+        },
+        fail: (err) => {
+          console.warn('[privacy] getPrivacySetting failed', err)
+          // 查询失败不阻断主流程，让真实隐私接口给出最终错误
+          resolve()
+        }
+      })
+    })
+  },
+
+  onAgreePrivacy() {
+    const resolve = this.privacyResolve
+    this.privacyResolve = null
+    this.privacyReject = null
+    this.setData({ showPrivacy: false })
+    if (resolve) resolve()
+  },
+
+  onRejectPrivacy() {
+    const reject = this.privacyReject
+    this.privacyResolve = null
+    this.privacyReject = null
+    this.setData({ showPrivacy: false })
+    if (reject) {
+      const error = new Error('需要同意用户隐私保护指引后才能使用语音或选择图片')
+      error.code = 'PRIVACY_REJECTED'
+      reject(error)
+    }
+  },
+
+  openPrivacyContract() {
+    if (typeof wx.openPrivacyContract !== 'function') {
+      wx.showToast({ title: '请升级微信后查看隐私协议', icon: 'none' })
+      return
+    }
+    wx.openPrivacyContract({
+      fail: (err) => {
+        console.warn('[privacy] openPrivacyContract failed', err)
+        wx.showToast({ title: '隐私协议暂时无法打开', icon: 'none' })
+      }
+    })
+  },
+
   // ---------------- 基础字段 ----------------
   onTitleInput(event) {
     this.setData({ 'form.title': event.detail.value })
@@ -232,6 +304,12 @@ Page({
   // ---------------- 图片 ----------------
   async chooseImage() {
     if (this.data.saving) return
+    try {
+      await this.ensurePrivacyAuthorization()
+    } catch (err) {
+      this.handleSpeechError(err)
+      return
+    }
     try {
       const file = await pickImage()
       if (file.size && file.size > MAX_IMAGE_BYTES) {
@@ -412,6 +490,14 @@ Page({
       return
     }
     if (this.voiceStarting) return
+
+    try {
+      await this.ensurePrivacyAuthorization()
+    } catch (err) {
+      console.warn('[voice] privacy authorization failed', err)
+      this.handleSpeechError(err)
+      return
+    }
 
     try {
       recorder.checkAvailable()
@@ -602,6 +688,10 @@ Page({
     this.voiceTarget = null
     this.resetVoice()
     const message = (res && (res.errMsg || res.message)) || '录音失败，请重试'
+    if (/privacy|banned|隐私/i.test(message)) {
+      this.handleSpeechError({ code: 'PRIVACY_NOT_CONFIGURED', message })
+      return
+    }
     if (/auth|permission|授权|权限/i.test(message)) {
       this.handleSpeechError({ code: 'RECORD_DENIED', message })
       return
@@ -612,10 +702,23 @@ Page({
   handleSpeechError(err) {
     const code = err && err.code
     const message = (err && err.message) || '语音输入不可用'
+    if (code === 'PRIVACY_REJECTED') {
+      wx.showToast({ title: '需要同意隐私保护指引后使用', icon: 'none' })
+      return
+    }
+    if (code === 'PRIVACY_NOT_CONFIGURED') {
+      wx.showModal({
+        title: '隐私接口未配置',
+        content: '这不是手机权限问题，而是小程序后台「用户隐私保护指引」未配置或未发布。\n\n请到：小程序后台 → 设置 → 服务内容声明 → 用户隐私保护指引，声明麦克风、相册、摄像头用途，保存并发布后再重新编译。\n\n在配置完成前，仍可继续用键盘输入。',
+        showCancel: false,
+        confirmText: '知道了'
+      })
+      return
+    }
     if (code === 'RECORD_DENIED') {
       wx.showModal({
         title: '需要麦克风权限',
-        content: '开启录音权限后才能使用语音输入。你也可以继续用键盘输入。',
+        content: '开启录音权限后才能使用语音输入。你也可以继续用键盘输入。\n\n如果手机权限已开启仍然失败，请检查小程序后台的“用户隐私保护指引”是否声明了麦克风。',
         confirmText: '去设置',
         confirmColor: '#E2603B',
         success: (modal) => {

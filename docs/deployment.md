@@ -177,6 +177,7 @@ wx.getRecorderManager 录音
 
 ```text
 [voice] tap
+[privacy] setting
 [voice] record permission granted
 [recorder] start
 [recorder] onStart
@@ -193,7 +194,8 @@ wx.getRecorderManager 录音
 | 最后出现的日志 | 说明 |
 | --- | --- |
 | 没有 `[voice] tap` | 页面还是旧代码/旧缓存，或按钮事件没有触发；重新编译真机预览。 |
-| 停在 `[voice] tap` | 录音权限申请失败或页面被判定 hidden；查看是否有错误 toast/弹窗，真机测试。 |
+| 停在 `[voice] tap` | 隐私协议或录音权限申请失败/页面被判定 hidden；查看是否有隐私弹窗、错误 toast，真机测试。 |
+| 出现 `[privacy] setting` 后没有录音 | 如果 `needAuthorization=true`，应先点隐私弹窗“同意并继续”；如果 `needAuthorization=false` 但仍报 privacy，请检查后台隐私声明。 |
 | 有 `[recorder] start` 但没有 `onStop` | 录音没有启动或被系统中断；检查麦克风权限、真机环境、录音格式兼容性。 |
 | 有 `[voice] recording result` 但没有 `uploading` 后成功 | 云存储上传失败；检查存储权限和网络。 |
 | 有 `[voice] calling speechToText` 但云函数无日志 | `speechToText` 未部署到当前环境；确认云开发控制台当前环境与 `CLOUD_ENV` 一致。 |
@@ -237,9 +239,13 @@ voice-temp/{openid}/{timestamp}-{random}.mp3
 
 1. 小程序管理后台 → 设置 → 服务内容声明 → 用户隐私保护指引。
 2. 声明使用 **麦克风**，用途填写“用于菜谱原材料和制作步骤的语音转文字输入”。
-3. 同时说明录音会临时上传至云存储，并传输至腾讯云语音识别服务完成转写，识别后会删除临时音频。
-4. 根据后台提示完成隐私协议审核/发布。
-5. 真机首次点击语音按钮时，微信会弹出录音授权；用户拒绝后，代码会引导打开设置页。
+3. 如果使用菜品照片选择，还要声明 **相册** 和 **摄像头**，用途填写“用于选择或拍摄菜品照片”。
+4. 同时说明录音会临时上传至云存储，并传输至腾讯云语音识别服务完成转写，识别后会删除临时音频。
+5. 保存后必须 **发布** 隐私保护指引（按后台要求完成审核），只在草稿里保存通常不生效。
+6. 真机首次点击语音按钮时，微信会弹出录音授权；用户拒绝后，代码会引导打开设置页。
+7. 编辑页已实现隐私授权弹窗：调用 `wx.getPrivacySetting`，需要授权时显示“同意并继续”按钮（`open-type="agreePrivacyAuthorization"`）。如果后台没有声明隐私类型，`needAuthorization` 可能返回 `false`，但录音仍会被平台禁用，并出现 `backgroundfetch privacy fail` 或 `privacy api banned`。
+
+> 如果控制台只有 `backgroundfetch privacy fail` 但录音能正常工作，这通常是微信内部日志，可以先忽略；如果录音没有声音/没有 `[recorder] onStop`，请按上面的隐私指引检查。
 
 > 不同基础库版本对隐私弹窗的交互略有差异。如果真机点击语音没有任何反应，先在后台补充隐私声明，再检查是否拒绝了录音权限。
 
@@ -332,6 +338,8 @@ wx.cloud.callFunction({
 | 发现页别人菜谱无图 | 新版本 `listRecipes` 会批量生成临时 `imageUrl`。重新部署该云函数并刷新；若仍无图，查看云函数日志里 `getTempFileURL failed` 的错误。 |
 | 图片上传失败 | 未登录、存储写权限不足、图片超过 8MB，或网络异常；查看 Console 的 `wx.cloud.uploadFile` 错误。 |
 | 语音按钮无反应 | 未声明麦克风隐私、用户拒绝录音权限，或 `wx.getRecorderManager` 不可用；检查授权设置。 |
+| `backgroundfetch privacy fail` / `privacy api banned` | 小程序后台“用户隐私保护指引”未声明麦克风/录音，或用户没同意隐私协议。完成声明并发布；编辑页会弹出隐私授权框。 |
+| 点击语音出现“隐私接口未配置” | 这不是手机权限，而是后台隐私保护指引未配置/未发布；按第 10 节处理。 |
 | 提示“语音识别未配置” | `speechToText` 云函数没有配置 `TENCENT_SECRET_ID` / `TENCENT_SECRET_KEY`，配置后重新部署。 |
 | 语音识别返回 `ASR_FAILED` | 检查腾讯云 ASR 是否开通、是否欠费/额度耗尽、音频是否超过 60 秒或 3MB；查看云函数日志中的 Tencent RequestId。 |
 | 语音返回 `AUDIO_INVALID` | 录音路径中的 openid 与当前云端身份不一致；开发者工具切换账号后清除 Storage 中的 `recipe_openid` 再重试。 |

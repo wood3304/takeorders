@@ -680,6 +680,86 @@
   opacity: 0.58;
 }
 
+/* 隐私协议授权弹窗 */
+.privacy-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  padding: 40rpx;
+  background: rgba(25, 21, 17, 0.56);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4rpx);
+}
+
+.privacy-dialog {
+  width: 100%;
+  max-width: 620rpx;
+  padding: 40rpx 32rpx 30rpx;
+  border-radius: 30rpx;
+  background: #fffdf9;
+  box-shadow: 0 30rpx 70rpx rgba(40, 30, 20, 0.22);
+}
+
+.privacy-title {
+  display: block;
+  color: var(--ink);
+  font-family: "STSong", "Songti SC", serif;
+  font-size: 36rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+.privacy-text {
+  display: block;
+  margin-top: 22rpx;
+  color: #766a5b;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.privacy-contract {
+  margin-top: 20rpx;
+  color: var(--brand-deep);
+  font-size: 23rpx;
+  font-weight: 600;
+}
+
+.privacy-actions {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin-top: 34rpx;
+}
+
+.privacy-cancel {
+  flex: none;
+  width: 170rpx;
+  height: 82rpx;
+  border: 1rpx solid var(--line);
+  border-radius: 41rpx;
+  background: #fdf9f2;
+  color: #7d6f5e;
+  font-size: 26rpx;
+  line-height: 82rpx;
+  text-align: center;
+}
+
+.privacy-agree {
+  flex: 1;
+  height: 82rpx;
+  border-radius: 41rpx;
+  background: linear-gradient(135deg, #ef7950, var(--brand-deep));
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 82rpx;
+}
+
 /* 加载/错误状态 */
 .editor-state {
   margin: 50rpx 30rpx;

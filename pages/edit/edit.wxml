@@ -299,4 +299,27 @@
       >{{saving ? '保存中…' : '保存菜谱'}}</button>
     </view>
   </block>
+
+  <!-- 微信隐私协议授权弹窗 -->
+  <view wx:if="{{showPrivacy}}" class="privacy-mask">
+    <view class="privacy-dialog">
+      <text class="privacy-title">用户隐私保护提示</text>
+      <text class="privacy-text">
+        使用语音输入、拍照或相册选图前，请阅读并同意{{privacyContractName}}。
+        录音仅用于菜谱文字转写，临时音频识别后会删除。
+      </text>
+      <view class="privacy-contract" bindtap="openPrivacyContract">
+        查看{{privacyContractName}} →
+      </view>
+      <view class="privacy-actions">
+        <view class="privacy-cancel" bindtap="onRejectPrivacy">暂不</view>
+        <button
+          id="agree-privacy-btn"
+          class="privacy-agree"
+          open-type="agreePrivacyAuthorization"
+          bindagreeprivacyauthorization="onAgreePrivacy"
+        >同意并继续</button>
+      </view>
+    </view>
+  </view>
 </view>

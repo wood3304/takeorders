@@ -234,6 +234,7 @@ node scripts/verify-cloud.js
 
 - 图片列表与详情会通过云函数管理端生成临时 HTTPS `imageUrl`，避免“别人看不到图片”的存储读权限问题；如果仍无图，优先检查云存储权限和 `imageFileID`。
 - 语音没有反应时，先在 Console 看 `[voice]` / `[recorder]` 日志，再按部署文档 8.4 节判断是录音、上传、云函数未部署还是 ASR 密钥问题。
+- 如果出现 `backgroundfetch privacy fail` 或 `privacy api banned`，通常是后台“用户隐私保护指引”没有声明麦克风/录音，或用户未同意隐私协议；编辑页已内置隐私授权弹窗，仍需在小程序后台完成声明并发布。
 - 现有 AppID 是 `wx51bba6084aee1075`，如果换成自己的 AppID，需要同步更换云环境，并重新配置腾讯云 ASR 密钥。
 - 语音链路依赖腾讯云 ASR 服务；未配置密钥时，文字编辑和菜谱功能仍然可用，只有语音按钮会提示“语音识别未配置”。
 - 当前未接入内容安全审核（`security.msgSecCheck` / 图片审核）。如果要上线公开版本，建议在 `saveRecipe` 和图片上传后增加审核逻辑。
